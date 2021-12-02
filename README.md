@@ -45,6 +45,9 @@ Use this pack to reformat and enhance your ClamAV logs.
 
 ## Release Notes
 
+### Version 1.0.0 - 2021-12-02
+No changes, just made the release official
+
 ### Version 0.50 - 2021-11-25
 Initial
 

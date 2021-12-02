@@ -1,1 +1,1 @@
-{"name":"cribl-clamav","version":"0.5.0","author":"Jon Rust - Cribl","description":"Parse, reformat, and/or filter ClamAV logs","displayName":"ClamAV"}
+{"name":"cribl-clamav","version":"1.0.0","author":"Jon Rust - Cribl","description":"Parse, reformat, and/or filter ClamAV logs","displayName":"ClamAV"}
