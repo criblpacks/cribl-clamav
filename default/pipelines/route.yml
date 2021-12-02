@@ -1,0 +1,47 @@
+id: default
+groups: {}
+routes:
+  - id: MMZN3w
+    name: clamav.log
+    final: true
+    disabled: false
+    pipeline: clamav_log
+    description: ""
+    clones: []
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _raw.includes('-- SCAN SUMMARY --')
+    output: default
+  - id: Oxt2dw
+    name: clamd.log
+    final: true
+    disabled: false
+    pipeline: clamd_log
+    description: ""
+    clones: []
+    enableOutputExpression: false
+    outputExpression: null
+    filter: source.includes('clamd') || sourcetype.includes('clamd')
+    output: default
+  - id: pDZj8Y
+    name: freshclam.log
+    final: true
+    disabled: false
+    pipeline: freshclam_log
+    description: ""
+    clones: []
+    enableOutputExpression: false
+    outputExpression: null
+    filter: source.includes('fresh') || sourcetype.includes('fresh')
+    output: default
+  - id: default
+    name: default
+    final: true
+    disabled: false
+    pipeline: main
+    description: ""
+    clones: []
+    enableOutputExpression: false
+    outputExpression: null
+    filter: "true"
+    output: default

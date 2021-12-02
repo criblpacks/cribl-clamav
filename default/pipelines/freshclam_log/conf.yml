@@ -1,0 +1,32 @@
+output: default
+groups: {}
+asyncFuncTimeout: 1000
+functions:
+  - id: drop
+    filter: /-> -------/.test(_raw)
+    disabled: null
+    conf: {}
+    description: "Optional: Drop contentless messages"
+  - id: eval
+    filter: "true"
+    disabled: null
+    conf:
+      add:
+        - name: _raw
+          value: _raw.replace(/.*-> /,'').replace(/ started at .*\d{4}$/,' started')
+        - name: source
+          value: source || './freshcalm.log'
+        - name: sourcetype
+          value: sourcetype || 'clamav:freshclam'
+        - name: index
+          value: index || 'clamav'
+        - name: host
+          value: host || 'clamhost_unknown'
+    description: Trim raw, set default fields
+  - id: chain
+    filter: "true"
+    disabled: null
+    conf:
+      processor: fix_timezone_gap
+    description: If time is off by very close to 1/2 hour boundaries, assume the nearest
+      timezone to that boundary

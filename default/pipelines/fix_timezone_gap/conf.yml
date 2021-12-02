@@ -1,0 +1,82 @@
+output: default
+groups:
+  r4S33B:
+    name: Debug Values
+    description: Enable this to test some scenarios
+    index: 1
+    disabled: true
+  wzLjXO:
+    name: Main Group
+    index: 2
+  yndSqc:
+    name: Debug Output
+    index: 3
+    description: Add a field to compare _time to now for a sanity check
+    disabled: true
+asyncFuncTimeout: 1000
+functions:
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        Brute force time change =======
+
+        Author: Jon Rust <jon@cribl.io>
+
+
+        If the time is off by something close to a 30 minute boundary, add the snapped 30 minute boundary count to _time. 'Close' means +/- 10 seconds by default. Adjust as needed in the filter of the 2nd eval of Main Group.
+
+
+        Example: If 'now() - _time' is off by +3600.230, that's 2 30 minute sections, and it's very close (230 ms). In this case, we'll add exactly 3600 to _time.
+
+
+        Example: 'now() - _time' is off by -1801 seconds. We will subtract 1800 seconds from _time.
+
+
+        Example: 'now() - _time' is off by 603 seconds. No change will be made as it's not close to a multiple of 1800.
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      add:
+        - name: _time
+          value: Date.now()/1000 + 10801
+    description: Set the offset below in seconds by setting the event time (_time) forward
+      or backward relative to Date.now()/1000
+    groupId: r4S33B
+  - id: eval
+    filter: "true"
+    disabled: null
+    conf:
+      add:
+        - name: __time_diff
+          value: Date.now()/1000 - _time
+        - name: __time_diff_abs
+          value: Math.abs(__time_diff)
+        - name: __half_snap_diff_abs
+          value: Math.round(__time_diff_abs,0) % 1800
+        - name: __half_snap
+          value: Math.round(__time_diff/1800,0)
+    description: Calculate dome diffs
+    groupId: wzLjXO
+  - id: eval
+    filter: 1770 < __time_diff_abs < 86430 && __half_snap_diff_abs < 10
+    disabled: null
+    conf:
+      add:
+        - name: _time
+          value: _time + __half_snap * 1800
+        - name: time_adj
+          value: "`${__half_snap/2}h`"
+    description: Only fix time for events that are roughly 30 minutes off up to 1 day off
+      (plus or minus) and the gap from 30min snap is < 30 seconds
+    groupId: wzLjXO
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      add:
+        - name: time_gap_sec
+          value: "_time - Date.now()/1000 "
+    groupId: yndSqc

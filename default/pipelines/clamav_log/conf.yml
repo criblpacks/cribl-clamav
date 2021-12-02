@@ -1,0 +1,141 @@
+output: default
+groups:
+  vPhIW7:
+    name: Repackage the event as JSON
+    index: 4
+  XITrGH:
+    name: Roll-up found
+    index: 6
+asyncFuncTimeout: 1000
+functions:
+  - id: regex_extract
+    filter: "true"
+    disabled: null
+    conf:
+      source: _raw
+      iterations: 100
+      overwrite: false
+      regex: /\n(?<_NAME_0>.*?):\s+(?<_VALUE_0>.*)/g
+      fieldNameExpression: name.replace(/ +/g,'_').replace(/[\/\\]/g,'SLASH_').replace(/^/,"my__")
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: Optionally drop events with no matches
+  - id: drop
+    filter: my__Infected_files == '0'
+    disabled: true
+    conf: {}
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: Repackage the data as _raw{}
+  - id: serialize
+    filter: "true"
+    disabled: null
+    conf:
+      type: json
+      dstField: _raw
+      fields:
+        - my__*
+    groupId: vPhIW7
+  - id: eval
+    filter: "true"
+    disabled: null
+    conf:
+      add:
+        - name: _raw
+          value: JSON.parse(_raw)
+    groupId: vPhIW7
+  - id: rename
+    filter: "true"
+    disabled: null
+    conf:
+      wildcardDepth: 5
+      baseFields:
+        - _raw
+      renameExpr: name.replace(/my__/,'')
+    groupId: vPhIW7
+  - id: eval
+    filter: "true"
+    disabled: null
+    conf:
+      add:
+        - name: _raw.Data_read
+          value: +_raw.Data_read.replace(/(?:\.\d+)? MB.*/,'')
+        - name: _raw.Data_scanned
+          value: +_raw.Data_scanned.replace(/(?:\.\d+)? MB/,'')
+    groupId: vPhIW7
+  - id: numerify
+    filter: "true"
+    disabled: null
+    conf:
+      format: none
+      ignoreFields: []
+      filterExpr: ""
+      digits: 0
+    groupId: vPhIW7
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: Roll-up found files into an array
+  - id: serde
+    filter: _raw.Infected_files > 0
+    disabled: null
+    conf:
+      mode: reserialize
+      type: json
+      srcField: _raw
+      fields: []
+      dstField: _raw.found
+      keep:
+        - SLASH*
+    groupId: XITrGH
+  - id: eval
+    filter: _raw.found
+    disabled: null
+    conf:
+      add:
+        - name: _raw.found
+          value: _raw.found.replace(/SLASH_/g,'/').match(/(\/[^"]+)/g)
+    groupId: XITrGH
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: Set _time, and clean-up duration (Time)
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - name: _time
+          value: +C.Time.strptime(_raw.Start_Date,"%Y:%m:%d %H:%M:%S")/1000
+        - name: _raw.Time
+          value: +_raw.Time.match(/\d+/)
+        - name: _raw.Start_Date
+          value: undefined
+        - name: _raw.End_Date
+          value: undefined
+        - name: index
+          value: index || 'clamav'
+        - name: sourcetype
+          value: sourcetype || 'clamav:clamav'
+        - name: source
+          value: source || './clamav.log'
+        - name: host
+          value: host || 'clamhost_unknown'
+        - name: infected
+          value: "_raw.Infected_files > 0 ? _raw.Infected_files : undefined"
+      remove:
+        - my__*
+        - _raw.SLASH*
+  - id: chain
+    filter: "true"
+    disabled: null
+    conf:
+      processor: fix_timezone_gap
+    description: If time is off by very close to 1/2 hour boundaries, assume the nearest
+      timezone to that boundary
